@@ -74,17 +74,36 @@ An interactive video installation built with openFrameworks that responds to vie
    cd fronteras-tower-2
    ```
 
-4. **Copy project to openFrameworks**
+4. **Copy project to openFrameworks folder**
+
+   Open **Command Prompt** or **PowerShell** and navigate to where you cloned the repo, then run:
 
    ```bash
    xcopy /E /I . C:\openFrameworks\apps\myApps\fronteras-tower-2
    ```
 
-5. **Download haarcascade file**
+   *What this does:* Copies the entire project into openFrameworks' apps folder where it can access OF libraries.
+   
+   **Alternative (File Explorer):**
+   - Copy the `fronteras-tower-2` folder
+   - Paste it into `C:\openFrameworks\apps\myApps\`
+   - Result should be: `C:\openFrameworks\apps\myApps\fronteras-tower-2\`
+
+5. **Download haarcascade face detection file**
+
+   In **Command Prompt**, navigate to the project folder and run:
 
    ```bash
+   cd C:\openFrameworks\apps\myApps\fronteras-tower-2
    copy C:\openFrameworks\data\haarcascades\haarcascade_frontalface_default.xml bin\data\
    ```
+
+   *What this does:* Copies OpenCV's face detection model into your project's data folder so the webcam can detect faces.
+   
+   **Alternative (File Explorer):**
+   - Navigate to `C:\openFrameworks\data\haarcascades\`
+   - Copy `haarcascade_frontalface_default.xml`
+   - Paste into `C:\openFrameworks\apps\myApps\fronteras-tower-2\bin\data\`
 
 6. **Generate project files with projectGenerator**
    - Navigate to `C:\openFrameworks\projectGenerator\`
