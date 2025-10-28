@@ -1,43 +1,33 @@
-# Prerequisites
-*.d
+# openFrameworks
+*.app/
+obj/
+bin/*.app
+bin/*.exe
+bin/libs/
 
-# Compiled Object files
-*.slo
-*.lo
+# Build files
 *.o
-*.obj
-
-# Precompiled Headers
-*.gch
-*.pch
-
-# Linker files
-*.ilk
-
-# Debugger Files
-*.pdb
-
-# Compiled Dynamic libraries
-*.so
-*.dylib
-*.dll
-
-# Fortran module files
-*.mod
-*.smod
-
-# Compiled Static libraries
-*.lai
-*.la
+*.d
 *.a
 *.lib
+Makefile
+*.make
+!addons.make
+!config.make
+*.xcodeproj/
+*.workspace
+*.xcworkspace
 
-# Executables
-*.exe
-*.out
-*.app
+# macOS
+.DS_Store
+*.swp
+*~
 
-# debug information files
-*.dwo
+# Large media files (consider Git LFS)
+bin/data/movies/*.mp4
+bin/data/movies/*.mov
+bin/data/movies/*.avi
 
-.DS_STORE
+# Keep folder structure
+!bin/data/movies/.gitkeep
+!bin/data/shaders/.gitkeep
