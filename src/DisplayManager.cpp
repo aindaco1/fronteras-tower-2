@@ -4,6 +4,10 @@ void DisplayManager::setup() {
     ofLogNotice() << "DisplayManager::setup() - Starting";
     
     proximity = 0.0f;
+    frameSkip = 2;  // Process every 3rd frame (0,1,skip,0,1,skip...)
+    frameCounter = 0;
+    consecutiveDetections = 0;
+    detectionThreshold = 3;  // Must detect face in 3+ consecutive processed frames
     
     webcam.setup(640, 480);
     ofLogNotice() << "Webcam setup complete";
@@ -18,8 +22,11 @@ void DisplayManager::setup() {
     
     ofLogNotice() << "Loading cascade: " << cascadeFile;
     faceFinder.setup(cascadeFile);
-    faceFinder.setScaleHaar(1.1f);
-    faceFinder.setNeighbors(4);
+    
+    // Optimized for low-res cameras and edge detection
+    faceFinder.setScaleHaar(1.2f);  // Faster, still accurate (was 1.1)
+    faceFinder.setNeighbors(2);     // Balanced sensitivity (2 = good for low-res + reduces false positives)
+    
     ofLogNotice() << "Face finder setup complete";
     
     colorImg.allocate(webcam.getWidth(), webcam.getHeight());
@@ -31,15 +38,20 @@ void DisplayManager::update() {
     webcam.update();
     
     if(webcam.isFrameNew()) {
+        // Frame skipping for performance
+        frameCounter++;
+        if(frameCounter % (frameSkip + 1) != 0) {
+            return;  // Skip this frame
+        }
+        
         // Properly convert to grayscale
         colorImg.setFromPixels(webcam.getPixels());
         grayImg.setFromColorImage(colorImg);  // Explicit conversion
-        grayImg.blur(3);  // Reduce noise
         
         // Use haar detection - size range relative to frame
         int minDim = std::min(webcam.getWidth(), webcam.getHeight());
-        int minSize = int(minDim * 0.18f);  // ~86px for 640x480
-        int maxSize = int(minDim * 0.65f);  // ~312px for 640x480
+        int minSize = int(minDim * 0.20f);  // ~96px for 640x480 (filter small false positives)
+        int maxSize = int(minDim * 0.95f);  // ~456px for 640x480 (allow very close faces)
         faceFinder.findHaarObjects(grayImg, minSize, minSize, maxSize, maxSize);
         
         // Debug output every 60 frames
@@ -68,12 +80,18 @@ void DisplayManager::draw(int windowIndex) {
     
     // Draw face detection rectangles
     ofSetLineWidth(2);
+    int minDim = std::min(webcam.getWidth(), webcam.getHeight());
+    float minAllowedSize = minDim * 0.20f;
+    
     for(int i = 0; i < faceFinder.blobs.size(); i++) {
         auto& rect = faceFinder.blobs[i].boundingRect;
         
-        // Filter: keep near-square faces only
+        // Filter: size check
+        if(rect.width < minAllowedSize) continue;
+        
+        // Filter: aspect ratio for partial/angled faces
         float aspect = (float)rect.width / rect.height;
-        bool validAspect = (aspect >= 0.75f && aspect <= 1.3f);
+        bool validAspect = (aspect >= 0.65f && aspect <= 1.55f);  // Slightly tighter than before
         
         if(!validAspect) continue;  // Skip invalid detections
         
@@ -91,16 +109,52 @@ void DisplayManager::draw(int windowIndex) {
     ofSetColor(255);
     ofDrawBitmapString("Proximity: " + ofToString(proximity, 2), 20, 20);
     ofDrawBitmapString("Faces detected: " + ofToString(faceFinder.blobs.size()), 20, 40);
+    
+    // Show face size for debugging
+    if(faceFinder.blobs.size() > 0) {
+        float faceSize = faceFinder.blobs[0].boundingRect.width;
+        ofDrawBitmapString("Face size: " + ofToString(faceSize, 0) + "px", 20, 60);
+    }
 }
 
 void DisplayManager::updateProximity() {
+    float targetProximity = proximity;
+    
     if(faceFinder.blobs.size() > 0) {
-        float faceSize = faceFinder.blobs[0].boundingRect.width;
-        float maxSize = webcam.getWidth() * 0.5f;
-        proximity = ofClamp(faceSize / maxSize, 0.0f, 1.0f);
+        consecutiveDetections++;
+        
+        // Only update proximity if we've seen face consistently
+        if(consecutiveDetections >= detectionThreshold) {
+            // Use largest valid detection (most likely real face)
+            int minDim = std::min(webcam.getWidth(), webcam.getHeight());
+            float minAllowedSize = minDim * 0.20f;
+            float largestFaceSize = 0;
+            
+            for(int i = 0; i < faceFinder.blobs.size(); i++) {
+                auto& rect = faceFinder.blobs[i].boundingRect;
+                
+                // Apply same filters as drawing
+                if(rect.width < minAllowedSize) continue;
+                float aspect = (float)rect.width / rect.height;
+                if(aspect < 0.65f || aspect > 1.55f) continue;
+                
+                largestFaceSize = std::max(largestFaceSize, (float)rect.width);
+            }
+            
+            // Only update if we found a valid face
+            if(largestFaceSize > 0) {
+                float minDetectionSize = minDim * 0.20f;
+                float maxDetectionSize = minDim * 0.95f;
+                targetProximity = ofMap(largestFaceSize, minDetectionSize, maxDetectionSize, 0.0f, 1.0f, true);
+            }
+        }
     } else {
-        proximity *= 0.95f;
+        consecutiveDetections = 0;  // Reset counter
+        targetProximity *= 0.92f;  // Decay slightly faster
     }
+    
+    // Smooth proximity changes to reduce jitter
+    proximity = ofLerp(proximity, targetProximity, 0.15f);
 }
 
 void DisplayManager::swapAssignments() {

@@ -31,6 +31,13 @@ private:
     float lastSwapTime;
     float swapInterval;
     
+    int frameSkip;
+    int frameCounter;
+    
+    // False positive filtering
+    int consecutiveDetections;
+    int detectionThreshold;
+    
     void updateProximity();
     void applyShaders(ofFbo& fbo, float intensity);
     

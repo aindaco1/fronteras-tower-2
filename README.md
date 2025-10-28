@@ -6,7 +6,7 @@ An interactive video installation built with openFrameworks that responds to vie
 
 ### Prerequisites
 
-- **macOS**: Homebrew, openFrameworks 0.12+
+- **macOS**: Homebrew, openFrameworks 0.12+, Xcode
 - **Windows 10**: Visual Studio 2022 (Community Edition is free), openFrameworks 0.12+
 - Git & Git LFS (optional, for video files)
 
@@ -67,6 +67,12 @@ An interactive video installation built with openFrameworks that responds to vie
    - In the **Project Navigator** (left sidebar), right-click the **src** folder → **Add Files to "fronteras-tower-2"...**
    - Select all source files: `DisplayApp.cpp`, `DisplayApp.h`, `DisplayManager.cpp`, `DisplayManager.h`, `main.cpp`
    - Press `⌘B` to build and verify it compiles successfully
+   
+   **Optional: Suppress openFrameworks core warnings**
+   - Go to **Build Settings** → search for "Other Warning Flags"
+   - Add: `-Wno-unused-function`
+   - Add: `-Wno-deprecated-declarations`
+   - This suppresses harmless warnings from openFrameworks core library code
 
 ---
 
