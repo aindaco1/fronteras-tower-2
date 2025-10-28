@@ -29,29 +29,40 @@ An interactive video installation built with openFrameworks that responds to vie
    brew install glfw pkg-config
    ```
 
-3. **Clone this repository**
+3. **Clone this repository into openFrameworks apps folder**
 
    ```bash
+   cd ~/openFrameworks/apps/myApps
    git clone https://github.com/aindaco1/fronteras-tower-2.git
    cd fronteras-tower-2
    ```
 
-4. **Symlink to openFrameworks apps folder**
+4. **Download haarcascade file**
 
    ```bash
-   ln -s $(pwd) ~/openFrameworks/apps/myApps/fronteras-tower-2
+   cd ~/openFrameworks/apps/myApps/fronteras-tower-2
+   cp ~/openFrameworks/examples/computer_vision/opencvHaarFinderExample/bin/data/haarcascade_frontalface_default.xml bin/data/
    ```
 
-5. **Download haarcascade file**
-
-   ```bash
-   cp ~/openFrameworks/data/haarcascades/haarcascade_frontalface_default.xml bin/data/
-   ```
-
-6. **Generate project files with projectGenerator**
-   - Open `~/openFrameworks/projectGenerator`
-   - Click "Import" and select this project folder
+5. **Generate project files with projectGenerator**
+   - Open `~/openFrameworks/projectGenerator/projectGenerator.app`
+   - Click "Import" and browse to `~/openFrameworks/apps/myApps/fronteras-tower-2`
+   - Make sure "ofxOpenCv" appears in the addons list
    - Click "Update" to generate Xcode project
+
+6. **Configure Xcode project**
+
+   Open the generated project:
+   
+   ```bash
+   open ~/openFrameworks/apps/myApps/fronteras-tower-2/fronteras-tower-2.xcodeproj
+   ```
+
+   Then in Xcode:
+   - Select the project in the navigator (top-level "fronteras-tower-2")
+   - Go to **Build Phases** → **Link Binary With Libraries**
+   - Find and **remove** the `AGL.framework` entry (click the `-` button)
+   - Press `⌘B` to build and verify it compiles successfully
 
 ---
 
@@ -67,55 +78,64 @@ An interactive video installation built with openFrameworks that responds to vie
    - Download **of_v0.12.0_vs2022_release.zip**
    - Extract to `C:\openFrameworks\`
 
-3. **Clone this repository**
+3. **Clone this repository directly into openFrameworks**
 
-   ```bash
+   ⚠️ **Important:** Clone directly into the openFrameworks apps folder (not elsewhere):
+
+   ```powershell
+   cd C:\openFrameworks\apps\myApps
    git clone https://github.com/aindaco1/fronteras-tower-2.git
    cd fronteras-tower-2
    ```
 
-4. **Copy project to openFrameworks folder**
+   *Why:* OpenFrameworks projects must be inside the OF directory structure to properly link libraries.
 
-   Open **Command Prompt** or **PowerShell** and navigate to where you cloned the repo, then run:
+4. **Copy haarcascade face detection file**
 
-   ```bash
-   xcopy /E /I . C:\openFrameworks\apps\myApps\fronteras-tower-2
-   ```
-
-   *What this does:* Copies the entire project into openFrameworks' apps folder where it can access OF libraries.
-   
-   **Alternative (File Explorer):**
-   - Copy the `fronteras-tower-2` folder
-   - Paste it into `C:\openFrameworks\apps\myApps\`
-   - Result should be: `C:\openFrameworks\apps\myApps\fronteras-tower-2\`
-
-5. **Download haarcascade face detection file**
-
-   In **Command Prompt**, navigate to the project folder and run:
-
-   ```bash
-   cd C:\openFrameworks\apps\myApps\fronteras-tower-2
+   ```powershell
    copy C:\openFrameworks\addons\ofxOpenCv\libs\opencv\etc\haarcascades\haarcascade_frontalface_default.xml bin\data\
    ```
 
-   *What this does:* Copies OpenCV's face detection model into your project's data folder so the webcam can detect faces.
-   
-   **Alternative (File Explorer):**
-   - Navigate to `C:\openFrameworks\addons\ofxOpenCv\libs\opencv\etc\haarcascades\`
-   - Copy `haarcascade_frontalface_default.xml`
-   - Paste into `C:\openFrameworks\apps\myApps\fronteras-tower-2\bin\data\`
+5. **Create temporary files for projectGenerator**
+
+   ProjectGenerator expects standard OF file names. Create these temporarily:
+
+   ```powershell
+   cd src
+   New-Item -ItemType File ofApp.cpp
+   New-Item -ItemType File ofApp.h
+   cd ..
+   ```
 
 6. **Generate project files with projectGenerator**
-   - Navigate to `C:\openFrameworks\projectGenerator\`
-   - Run `projectGenerator.exe`
-   - Click "Import" and browse to `C:\openFrameworks\apps\myApps\fronteras-tower-2`
-   - Make sure "ofxOpenCv" is listed in addons
-   - Click "Update" to generate Visual Studio solution
+   
+   ```powershell
+   C:\openFrameworks\projectGenerator\projectGenerator.exe
+   ```
 
-7. **Open and build**
-   - Open the generated `.sln` file in Visual Studio
-   - Set build configuration to "Release" or "Debug"
-   - Press `F5` to build and run
+   - Click "Import" and browse to `C:\openFrameworks\apps\myApps\fronteras-tower-2`
+   - Make sure **ofxOpenCv** is listed in addons
+   - Click "Update" to generate Visual Studio solution
+   - Close projectGenerator
+
+7. **Open in Visual Studio and configure**
+   
+   ```powershell
+   .\fronteras-tower-2.sln
+   ```
+
+   Once Visual Studio opens:
+   - In **Solution Explorer**, right-click on `ofApp.cpp` → **Remove** (do NOT delete)
+   - Right-click on `ofApp.h` → **Remove**
+   - Right-click the **src** folder → **Add → Existing Item...**
+   - Select `DisplayApp.cpp`, `DisplayApp.h`, `DisplayManager.cpp`, `DisplayManager.h`, `main.cpp`
+   - Right-click the project → **Properties** → **Debugging** → set **Working Directory** to: `$(ProjectDir)bin`
+   - Click **Apply** and **OK**
+
+8. **Build and run**
+   - Set build configuration to "Debug"
+   - Press **Ctrl+Shift+B** to build
+   - Press **F5** to run
 
 ### Adding Video Files
 
@@ -126,13 +146,14 @@ Place `.mp4` or `.mov` files in `bin/data/movies/`. These are ignored by git due
 **macOS:**
 
 ```bash
-cd ~/openFrameworks/apps/myApps/fronteras-tower-2
-make RunRelease
+open ~/openFrameworks/apps/myApps/fronteras-tower-2/fronteras-tower-2.xcodeproj
 ```
+
+- Press `⌘R` to build and run
 
 **Windows:**
 
-- Open the `.sln` file in Visual Studio
+- Open the generated `.sln` file in Visual Studio
 - Press `F5` or click "Local Windows Debugger"
 
 ## 📁 Project Structure
