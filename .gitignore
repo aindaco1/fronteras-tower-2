@@ -14,14 +14,39 @@ Makefile
 *.make
 !addons.make
 !config.make
+
+# macOS
 *.xcodeproj/
 *.workspace
 *.xcworkspace
-
-# macOS
 .DS_Store
 *.swp
 *~
+
+# Windows
+*.sln
+*.vcxproj
+*.vcxproj.filters
+*.vcxproj.user
+.vs/
+*.suo
+*.user
+*.ncb
+*.sdf
+*.opensdf
+*.db
+*.opendb
+*.aps
+*.pch
+*.idb
+*.pdb
+*.ilk
+*.log
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+ipch/
 
 # Large media files (consider Git LFS)
 bin/data/movies/*.mp4

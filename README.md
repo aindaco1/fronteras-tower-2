@@ -5,14 +5,17 @@ An interactive video installation built with openFrameworks that responds to vie
 ## 🚀 Setup for Collaborators
 
 ### Prerequisites
-- macOS (or Linux/Windows with adjustments)
-- Homebrew (macOS)
-- openFrameworks 0.12+
+
+- **macOS**: Homebrew, openFrameworks 0.12+
+- **Windows 10**: Visual Studio 2022 (Community Edition is free), openFrameworks 0.12+
 - Git & Git LFS (optional, for video files)
 
-### Installation
+---
+
+### 🍎 macOS Installation
 
 1. **Install openFrameworks**
+
    ```bash
    cd ~/Downloads
    curl -L https://github.com/openframeworks/openFrameworks/releases/download/0.12.0/of_v0.12.0_osx_release.zip -o of_v0.12.0_osx_release.zip
@@ -21,32 +24,79 @@ An interactive video installation built with openFrameworks that responds to vie
    ```
 
 2. **Install dependencies**
+
    ```bash
    brew install glfw pkg-config
    ```
 
 3. **Clone this repository**
+
    ```bash
    git clone https://github.com/aindaco1/fronteras-tower-2.git
    cd fronteras-tower-2
    ```
 
 4. **Symlink to openFrameworks apps folder**
+
    ```bash
    ln -s $(pwd) ~/openFrameworks/apps/myApps/fronteras-tower-2
    ```
 
 5. **Download haarcascade file**
+
    ```bash
    cp ~/openFrameworks/data/haarcascades/haarcascade_frontalface_default.xml bin/data/
    ```
 
-6. **Generate project files**
-   Use openFrameworks projectGenerator or:
+6. **Generate project files with projectGenerator**
+   - Open `~/openFrameworks/projectGenerator`
+   - Click "Import" and select this project folder
+   - Click "Update" to generate Xcode project
+
+---
+
+### 🪟 Windows 10 Installation
+
+1. **Install Visual Studio 2022**
+   - Download [Visual Studio Community 2022](https://visualstudio.microsoft.com/downloads/)
+   - During install, select "Desktop development with C++"
+   - Include: MSVC, Windows SDK, C++ CMake tools
+
+2. **Download openFrameworks**
+   - Go to [openFrameworks downloads](https://openframeworks.cc/download/)
+   - Download **of_v0.12.0_vs2022_release.zip**
+   - Extract to `C:\openFrameworks\`
+
+3. **Clone this repository**
+
    ```bash
-   cd ~/openFrameworks/apps/myApps/fronteras-tower-2
-   make
+   git clone https://github.com/aindaco1/fronteras-tower-2.git
+   cd fronteras-tower-2
    ```
+
+4. **Copy project to openFrameworks**
+
+   ```bash
+   xcopy /E /I . C:\openFrameworks\apps\myApps\fronteras-tower-2
+   ```
+
+5. **Download haarcascade file**
+
+   ```bash
+   copy C:\openFrameworks\data\haarcascades\haarcascade_frontalface_default.xml bin\data\
+   ```
+
+6. **Generate project files with projectGenerator**
+   - Navigate to `C:\openFrameworks\projectGenerator\`
+   - Run `projectGenerator.exe`
+   - Click "Import" and browse to `C:\openFrameworks\apps\myApps\fronteras-tower-2`
+   - Make sure "ofxOpenCv" is listed in addons
+   - Click "Update" to generate Visual Studio solution
+
+7. **Open and build**
+   - Open the generated `.sln` file in Visual Studio
+   - Set build configuration to "Release" or "Debug"
+   - Press `F5` to build and run
 
 ### Adding Video Files
 
@@ -54,10 +104,17 @@ Place `.mp4` or `.mov` files in `bin/data/movies/`. These are ignored by git due
 
 ### Running
 
+**macOS:**
+
 ```bash
 cd ~/openFrameworks/apps/myApps/fronteras-tower-2
 make RunRelease
 ```
+
+**Windows:**
+
+- Open the `.sln` file in Visual Studio
+- Press `F5` or click "Local Windows Debugger"
 
 ## 📁 Project Structure
 
