@@ -2,7 +2,7 @@
 # Collaborators should set OF_ROOT to their local openFrameworks installation
 
 # Uncomment and set your openFrameworks path
-# OF_ROOT = $(HOME)/openFrameworks
+OF_ROOT = ../../..
 
 # Project settings
 APPNAME = fronteras-tower-2

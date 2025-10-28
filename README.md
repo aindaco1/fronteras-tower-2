@@ -95,13 +95,13 @@ An interactive video installation built with openFrameworks that responds to vie
 
    ```bash
    cd C:\openFrameworks\apps\myApps\fronteras-tower-2
-   copy C:\openFrameworks\data\haarcascades\haarcascade_frontalface_default.xml bin\data\
+   copy C:\openFrameworks\addons\ofxOpenCv\libs\opencv\etc\haarcascades\haarcascade_frontalface_default.xml bin\data\
    ```
 
    *What this does:* Copies OpenCV's face detection model into your project's data folder so the webcam can detect faces.
    
    **Alternative (File Explorer):**
-   - Navigate to `C:\openFrameworks\data\haarcascades\`
+   - Navigate to `C:\openFrameworks\addons\ofxOpenCv\libs\opencv\etc\haarcascades\`
    - Copy `haarcascade_frontalface_default.xml`
    - Paste into `C:\openFrameworks\apps\myApps\fronteras-tower-2\bin\data\`
 

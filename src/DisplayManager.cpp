@@ -1,37 +1,18 @@
 #include "DisplayManager.h"
 
 void DisplayManager::setup() {
-    proximity = 0.0f;
-    swapInterval = 10.0f;
-    lastSwapTime = ofGetElapsedTimef();
+    ofLogNotice() << "DisplayManager::setup() - Starting";
     
-    webcam.setup(1920, 1080);
+    proximity = 0.0f;
+    
+    webcam.setup(640, 480);
+    ofLogNotice() << "Webcam setup complete";
     
     faceFinder.setup("haarcascade_frontalface_default.xml");
+    
     colorImg.allocate(webcam.getWidth(), webcam.getHeight());
     grayImg.allocate(webcam.getWidth(), webcam.getHeight());
-    
-    for(int i = 0; i < NUM_OUTPUTS; i++) {
-        ofFbo fbo;
-        fbo.allocate(1920, 1080, GL_RGBA);
-        fbos.push_back(fbo);
-        windowAssignment[i] = i;
-    }
-    
-    ofDirectory dir("movies");
-    dir.allowExt("mp4");
-    dir.allowExt("mov");
-    dir.listDir();
-    
-    for(int i = 0; i < dir.size(); i++) {
-        ofVideoPlayer video;
-        video.load(dir.getPath(i));
-        video.setLoopState(OF_LOOP_NORMAL);
-        video.play();
-        videos.push_back(video);
-    }
-    
-    proximityShader.load("shaders/proximity");
+    ofLogNotice() << "Face detection setup complete";
 }
 
 void DisplayManager::update() {
@@ -40,40 +21,30 @@ void DisplayManager::update() {
     if(webcam.isFrameNew()) {
         colorImg.setFromPixels(webcam.getPixels());
         grayImg = colorImg;
-        faceFinder.findHaarObjects(grayImg);
+        
+        // Parameters: image, scaleHaar, minNeighbors, flags, minWidth, minHeight
+        faceFinder.findHaarObjects(grayImg, 80, 250);  // min 80px, max 250px face size
         updateProximity();
-    }
-    
-    for(auto& video : videos) {
-        video.update();
-    }
-    
-    if(ofGetElapsedTimef() - lastSwapTime > swapInterval) {
-        swapAssignments();
-        lastSwapTime = ofGetElapsedTimef();
-    }
-    
-    for(int i = 0; i < NUM_OUTPUTS; i++) {
-        fbos[i].begin();
-        ofClear(0, 0, 0);
-        
-        int assignedSource = windowAssignment[i];
-        if(assignedSource == 0) {
-            webcam.draw(0, 0, 1920, 1080);
-        } else if(assignedSource - 1 < videos.size()) {
-            videos[assignedSource - 1].draw(0, 0, 1920, 1080);
-        }
-        
-        fbos[i].end();
-        
-        applyShaders(fbos[i], proximity);
     }
 }
 
 void DisplayManager::draw(int windowIndex) {
-    if(windowIndex < NUM_OUTPUTS) {
-        fbos[windowIndex].draw(0, 0);
+    ofBackground(0);
+    ofSetColor(255);
+    webcam.draw(0, 0, ofGetWidth(), ofGetHeight());
+    
+    // Draw face detection rectangles
+    ofSetColor(0, 255, 0);
+    for(int i = 0; i < faceFinder.blobs.size(); i++) {
+        ofNoFill();
+        ofDrawRectangle(faceFinder.blobs[i].boundingRect);
+        ofFill();
     }
+    
+    // Draw proximity info
+    ofSetColor(255);
+    ofDrawBitmapString("Proximity: " + ofToString(proximity, 2), 20, 20);
+    ofDrawBitmapString("Faces: " + ofToString(faceFinder.blobs.size()), 20, 40);
 }
 
 void DisplayManager::updateProximity() {

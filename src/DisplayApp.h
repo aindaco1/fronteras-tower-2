@@ -5,11 +5,13 @@
 
 class DisplayApp : public ofBaseApp {
 public:
-    void setup(DisplayManager* mgr, int windowIdx);
-    void update();
-    void draw();
+    void init(DisplayManager* mgr, int windowIdx);
+    void setup() override;
+    void update() override;
+    void draw() override;
     
 private:
-    DisplayManager* manager;
-    int windowIndex;
+    DisplayManager* manager = nullptr;
+    int windowIndex = -1;
+    bool initialized = false;
 };
