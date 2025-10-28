@@ -148,6 +148,29 @@ fronteras-tower-2/
 └── config.make          # Build configuration
 ```
 
+## 🔄 Collaboration Workflow
+
+**Important:** Each platform generates its own project files (`.xcodeproj` for macOS, `.sln` for Windows). These are ignored by git.
+
+**When you make changes:**
+1. Edit code in `~/openFrameworks/apps/myApps/fronteras-tower-2` (macOS) or `C:\openFrameworks\apps\myApps\fronteras-tower-2` (Windows)
+2. Commit and push only source files (`src/`, `bin/data/`, `addons.make`, etc.)
+3. Project files stay local to your machine
+
+**When you pull changes:**
+1. Pull the latest code
+2. Your existing project files (`.xcodeproj` or `.sln`) automatically reference the updated source
+3. No need to regenerate project files unless `addons.make` changes
+
+**What gets shared via git:**
+- ✅ Source code (`src/`)
+- ✅ Shaders (`bin/data/shaders/`)
+- ✅ Configuration files (`addons.make`, `config.make`)
+- ✅ Documentation (`README.md`, `agents.md`)
+- ❌ Build outputs (`bin/*.app`, `bin/*.exe`)
+- ❌ Platform-specific project files (`.xcodeproj`, `.sln`)
+- ❌ Video files (share separately via cloud storage)
+
 ## 🎨 Technical Details
 
 See [agents.md](agents.md) for full architectural documentation.
