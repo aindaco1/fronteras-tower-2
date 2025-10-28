@@ -60,8 +60,12 @@ An interactive video installation built with openFrameworks that responds to vie
 
    Then in Xcode:
    - Select the project in the navigator (top-level "fronteras-tower-2")
+   - Go to **Build Phases** → **Compile Sources**
+   - **Remove** `ofApp.cpp` and `ofApp.h` (select and click the `-` button)
    - Go to **Build Phases** → **Link Binary With Libraries**
    - Find and **remove** the `AGL.framework` entry (click the `-` button)
+   - In the **Project Navigator** (left sidebar), right-click the **src** folder → **Add Files to "fronteras-tower-2"...**
+   - Select all source files: `DisplayApp.cpp`, `DisplayApp.h`, `DisplayManager.cpp`, `DisplayManager.h`, `main.cpp`
    - Press `⌘B` to build and verify it compiles successfully
 
 ---
