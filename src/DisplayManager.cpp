@@ -32,6 +32,14 @@ void DisplayManager::setup() {
     colorImg.allocate(webcam.getWidth(), webcam.getHeight());
     grayImg.allocate(webcam.getWidth(), webcam.getHeight());
     ofLogNotice() << "Face detection setup complete";
+    
+    // Load glitch shader
+    ofLogNotice() << "Attempting to load glitch shader";
+    if(glitchShader.load("shaders/glitch")) {
+        ofLogNotice() << "Glitch shader loaded successfully";
+    } else {
+        ofLogError() << "Failed to load glitch shader";
+    }
 }
 
 void DisplayManager::update() {
@@ -70,13 +78,22 @@ void DisplayManager::update() {
 void DisplayManager::draw(int windowIndex) {
     ofBackground(0);
     
+    // Allocate FBO if needed
+    if(!renderFbo.isAllocated() || renderFbo.getWidth() != ofGetWidth() || renderFbo.getHeight() != ofGetHeight()) {
+        renderFbo.allocate(ofGetWidth(), ofGetHeight(), GL_RGBA);
+    }
+    
+    // First, draw everything to FBO
+    renderFbo.begin();
+    ofClear(0, 0, 0, 255);
+    
     // Draw webcam fullscreen
     ofSetColor(255);
-    webcam.draw(0, 0, ofGetWidth(), ofGetHeight());
+    webcam.draw(0, 0, renderFbo.getWidth(), renderFbo.getHeight());
     
     // Calculate scale for overlays
-    float sx = (float)ofGetWidth() / webcam.getWidth();
-    float sy = (float)ofGetHeight() / webcam.getHeight();
+    float sx = (float)renderFbo.getWidth() / webcam.getWidth();
+    float sy = (float)renderFbo.getHeight() / webcam.getHeight();
     
     // Draw face detection rectangles
     ofSetLineWidth(2);
@@ -91,9 +108,9 @@ void DisplayManager::draw(int windowIndex) {
         
         // Filter: aspect ratio for partial/angled faces
         float aspect = (float)rect.width / rect.height;
-        bool validAspect = (aspect >= 0.65f && aspect <= 1.55f);  // Slightly tighter than before
+        bool validAspect = (aspect >= 0.65f && aspect <= 1.55f);
         
-        if(!validAspect) continue;  // Skip invalid detections
+        if(!validAspect) continue;
         
         ofSetColor(0, 255, 0);
         ofNoFill();
@@ -114,6 +131,29 @@ void DisplayManager::draw(int windowIndex) {
     if(faceFinder.blobs.size() > 0) {
         float faceSize = faceFinder.blobs[0].boundingRect.width;
         ofDrawBitmapString("Face size: " + ofToString(faceSize, 0) + "px", 20, 60);
+    }
+    
+    renderFbo.end();
+    
+    // Apply glitch shader with proximity intensity
+    ofSetColor(255);
+    if(glitchShader.isLoaded()) {
+        // Amplify proximity for more visible effect
+        float glitchIntensity = proximity * 2.0f; // Boost the effect
+        
+        glitchShader.begin();
+        glitchShader.setUniformTexture("tex0", renderFbo.getTexture(), 0);
+        glitchShader.setUniform1f("intensity", glitchIntensity);
+        glitchShader.setUniform1f("time", ofGetElapsedTimef());
+        renderFbo.draw(0, 0, ofGetWidth(), ofGetHeight());
+        glitchShader.end();
+        
+        // Debug: show if shader is active
+        if(ofGetFrameNum() % 60 == 0) {
+            ofLogNotice() << "Shader active - proximity: " << proximity << " intensity: " << glitchIntensity;
+        }
+    } else {
+        renderFbo.draw(0, 0, ofGetWidth(), ofGetHeight());
     }
 }
 
@@ -164,14 +204,4 @@ void DisplayManager::swapAssignments() {
     windowAssignment[2] = temp;
 }
 
-void DisplayManager::applyShaders(ofFbo& fbo, float intensity) {
-    if(proximityShader.isLoaded()) {
-        fbo.begin();
-        proximityShader.begin();
-        proximityShader.setUniform1f("intensity", intensity);
-        proximityShader.setUniform1f("time", ofGetElapsedTimef());
-        fbo.draw(0, 0);
-        proximityShader.end();
-        fbo.end();
-    }
-}
+

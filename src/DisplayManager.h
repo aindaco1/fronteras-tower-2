@@ -39,7 +39,7 @@ private:
     int detectionThreshold;
     
     void updateProximity();
-    void applyShaders(ofFbo& fbo, float intensity);
     
-    ofShader proximityShader;
+    ofShader glitchShader;
+    ofFbo renderFbo;
 };
