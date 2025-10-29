@@ -30,6 +30,11 @@ void main() {
     // Vertical hold shift (VHS tracking issues)
     float vholdShift = sin(time * 2.0 + uv.y * 0.01) * intensity * intensity * 100.0;
     
+    // Make both displacements choppy at high intensity
+    float chopAmount = max(1.0, 20.0 * intensity); // More quantization when closer
+    displacement = floor(displacement / chopAmount) * chopAmount;
+    vholdShift = floor(vholdShift / chopAmount) * chopAmount;
+    
     vec2 glitchUV = uv + vec2(displacement + vholdShift, 0.0);
     vec4 glitchColor = texture2DRect(tex0, glitchUV);
     

@@ -3,6 +3,7 @@
 void DisplayManager::setup() {
     ofLogNotice() << "DisplayManager::setup() - Starting";
     
+    setupComplete = false;
     proximity = 0.0f;
     frameSkip = 2;  // Process every 3rd frame (0,1,skip,0,1,skip...)
     frameCounter = 0;
@@ -33,13 +34,13 @@ void DisplayManager::setup() {
     grayImg.allocate(webcam.getWidth(), webcam.getHeight());
     ofLogNotice() << "Face detection setup complete";
     
-    // Load glitch shader
-    ofLogNotice() << "Attempting to load glitch shader";
-    if(glitchShader.load("shaders/glitch")) {
-        ofLogNotice() << "Glitch shader loaded successfully";
-    } else {
-        ofLogError() << "Failed to load glitch shader";
-    }
+    // Allocate vectors for 3 windows (shaders loaded per-window in draw)
+    renderFbos.resize(NUM_OUTPUTS);
+    glitchShaders.resize(NUM_OUTPUTS);
+    webcamTextures.resize(NUM_OUTPUTS);
+    
+    setupComplete = true;
+    ofLogNotice() << "DisplayManager setup complete!";
 }
 
 void DisplayManager::update() {
@@ -78,22 +79,37 @@ void DisplayManager::update() {
 void DisplayManager::draw(int windowIndex) {
     ofBackground(0);
     
-    // Allocate FBO if needed
-    if(!renderFbo.isAllocated() || renderFbo.getWidth() != ofGetWidth() || renderFbo.getHeight() != ofGetHeight()) {
-        renderFbo.allocate(ofGetWidth(), ofGetHeight(), GL_RGBA);
+    // Load shader for this window's GL context (only once)
+    if(!glitchShaders[windowIndex].isLoaded()) {
+        if(glitchShaders[windowIndex].load("shaders/glitch")) {
+            ofLogNotice() << "Loaded shader for window " << windowIndex;
+        }
     }
     
-    // First, draw everything to FBO
-    renderFbo.begin();
+    // Allocate FBO for this window if needed
+    if(!renderFbos[windowIndex].isAllocated() || 
+       renderFbos[windowIndex].getWidth() != ofGetWidth() || 
+       renderFbos[windowIndex].getHeight() != ofGetHeight()) {
+        renderFbos[windowIndex].allocate(ofGetWidth(), ofGetHeight(), GL_RGBA);
+        ofLogNotice() << "Allocated FBO for window " << windowIndex;
+    }
+    
+    // Update webcam texture for this GL context
+    if(webcam.isInitialized() && webcam.getPixels().size() > 0) {
+        webcamTextures[windowIndex].loadData(webcam.getPixels());
+    }
+    
+    // Draw to FBO
+    renderFbos[windowIndex].begin();
     ofClear(0, 0, 0, 255);
     
-    // Draw webcam fullscreen
+    // Draw webcam
     ofSetColor(255);
-    webcam.draw(0, 0, renderFbo.getWidth(), renderFbo.getHeight());
+    webcamTextures[windowIndex].draw(0, 0, renderFbos[windowIndex].getWidth(), renderFbos[windowIndex].getHeight());
     
     // Calculate scale for overlays
-    float sx = (float)renderFbo.getWidth() / webcam.getWidth();
-    float sy = (float)renderFbo.getHeight() / webcam.getHeight();
+    float sx = (float)renderFbos[windowIndex].getWidth() / webcam.getWidth();
+    float sy = (float)renderFbos[windowIndex].getHeight() / webcam.getHeight();
     
     // Draw face detection rectangles
     ofSetLineWidth(2);
@@ -133,27 +149,21 @@ void DisplayManager::draw(int windowIndex) {
         ofDrawBitmapString("Face size: " + ofToString(faceSize, 0) + "px", 20, 60);
     }
     
-    renderFbo.end();
+    renderFbos[windowIndex].end();
     
-    // Apply glitch shader with proximity intensity
+    // Apply glitch shader
     ofSetColor(255);
-    if(glitchShader.isLoaded()) {
-        // Amplify proximity for more visible effect
-        float glitchIntensity = proximity * 2.0f; // Boost the effect
+    if(glitchShaders[windowIndex].isLoaded()) {
+        float glitchIntensity = proximity * 2.0f;
         
-        glitchShader.begin();
-        glitchShader.setUniformTexture("tex0", renderFbo.getTexture(), 0);
-        glitchShader.setUniform1f("intensity", glitchIntensity);
-        glitchShader.setUniform1f("time", ofGetElapsedTimef());
-        renderFbo.draw(0, 0, ofGetWidth(), ofGetHeight());
-        glitchShader.end();
-        
-        // Debug: show if shader is active
-        if(ofGetFrameNum() % 60 == 0) {
-            ofLogNotice() << "Shader active - proximity: " << proximity << " intensity: " << glitchIntensity;
-        }
+        glitchShaders[windowIndex].begin();
+        glitchShaders[windowIndex].setUniformTexture("tex0", renderFbos[windowIndex].getTexture(), 0);
+        glitchShaders[windowIndex].setUniform1f("intensity", glitchIntensity);
+        glitchShaders[windowIndex].setUniform1f("time", ofGetElapsedTimef());
+        renderFbos[windowIndex].draw(0, 0, ofGetWidth(), ofGetHeight());
+        glitchShaders[windowIndex].end();
     } else {
-        renderFbo.draw(0, 0, ofGetWidth(), ofGetHeight());
+        renderFbos[windowIndex].draw(0, 0, ofGetWidth(), ofGetHeight());
     }
 }
 

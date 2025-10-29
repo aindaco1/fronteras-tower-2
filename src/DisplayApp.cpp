@@ -10,18 +10,24 @@ void DisplayApp::setup() {
 }
 
 void DisplayApp::update() {
+    // Only window 0 initializes and updates the manager
     if(!initialized && windowIndex == 0 && manager) {
         manager->setup();
         initialized = true;
     }
-    if(windowIndex == 0 && manager && initialized) {
+    if(windowIndex == 0 && manager) {
         manager->update();
     }
 }
 
 void DisplayApp::draw() {
     ofBackground(0);
-    if(manager) {
+    // All windows share the same manager and draw
+    if(manager && manager->isSetup()) {
         manager->draw(windowIndex);
+    } else {
+        // Debug: show which window this is if manager not ready
+        ofSetColor(255);
+        ofDrawBitmapString("Window " + ofToString(windowIndex) + " waiting for setup...", 20, 20);
     }
 }

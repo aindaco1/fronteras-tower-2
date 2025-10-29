@@ -11,6 +11,7 @@ public:
     
     float getProximity() const { return proximity; }
     ofFbo& getFbo(int index) { return fbos[index]; }
+    bool isSetup() const { return setupComplete; }
     
     void swapAssignments();
     
@@ -38,8 +39,11 @@ private:
     int consecutiveDetections;
     int detectionThreshold;
     
+    bool setupComplete;
+    
     void updateProximity();
     
-    ofShader glitchShader;
-    ofFbo renderFbo;
+    vector<ofShader> glitchShaders; // One per window (GL context)
+    vector<ofFbo> renderFbos; // One per window
+    vector<ofTexture> webcamTextures; // One per window
 };
