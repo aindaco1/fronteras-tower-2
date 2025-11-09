@@ -127,6 +127,14 @@ void DisplayManager::update() {
 			return; // Skip this frame
 		}
 
+		// Ensure images match webcam size (safety check)
+		if (colorImg.width != webcam.getWidth() || colorImg.height != webcam.getHeight()) {
+			colorImg.allocate(webcam.getWidth(), webcam.getHeight());
+			grayImg.allocate(webcam.getWidth(), webcam.getHeight());
+			ofLogNotice() << "Reallocated CV images to match webcam: " 
+						  << webcam.getWidth() << "x" << webcam.getHeight();
+		}
+
 		// Properly convert to grayscale
 		colorImg.setFromPixels(webcam.getPixels());
 		grayImg.setFromColorImage(colorImg); // Explicit conversion
