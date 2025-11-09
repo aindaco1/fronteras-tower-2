@@ -8,7 +8,7 @@ int main() {
     globalManager = make_shared<DisplayManager>();
     
     ofGLFWWindowSettings settings;
-    settings.setSize(640, 480);
+    settings.setSize(720, 480);
     settings.resizable = true;
     
     // Window 1 - Top Left (with title bar offset)
@@ -17,16 +17,16 @@ int main() {
     auto app1 = make_shared<DisplayApp>();
     app1->init(globalManager.get(), 0);
     ofRunApp(window1, app1);
-    
+
     // Window 2 - Top Right
     settings.setPosition(ofVec2f(750, 50));
     auto window2 = ofCreateWindow(settings);
     auto app2 = make_shared<DisplayApp>();
     app2->init(globalManager.get(), 1);
     ofRunApp(window2, app2);
-    
+
     // Window 3 - Bottom Left
-    settings.setPosition(ofVec2f(50, 600));
+    settings.setPosition(ofVec2f(50, 530));
     auto window3 = ofCreateWindow(settings);
     auto app3 = make_shared<DisplayApp>();
     app3->init(globalManager.get(), 2);

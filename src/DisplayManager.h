@@ -13,8 +13,6 @@ public:
     ofFbo& getFbo(int index) { return fbos[index]; }
     bool isSetup() const { return setupComplete; }
     
-    void swapAssignments();
-    
 private:
     static const int NUM_OUTPUTS = 3;
     
@@ -24,6 +22,9 @@ private:
     ofxCvGrayscaleImage grayImg;
     
     vector<ofVideoPlayer> videos;
+    vector<ofVec2f> videoLetterboxDims;  // Pre-calculated letterbox dims {drawW, drawY}
+    ofImage staticImage;
+    vector<ofTexture> staticImageTextures;  // One per window
     vector<ofFbo> fbos;
     
     float proximity;
@@ -31,6 +32,16 @@ private:
     
     float lastSwapTime;
     float swapInterval;
+
+    int currentVideoIndex;
+    
+    // Static image mirror behavior
+    float staticImageShowTime;
+    bool inMirrorMode;
+    float mirrorModeStartTime;
+    float mirrorModeDuration;
+    int mirrorSource;
+    int lastStaticImageWindow;
     
     int frameSkip;
     int frameCounter;
@@ -42,8 +53,11 @@ private:
     bool setupComplete;
     
     void updateProximity();
+    void calculateLetterboxDims(int videoIndex);
+    void reloadVideo(int videoIndex);
     
     vector<ofShader> glitchShaders; // One per window (GL context)
     vector<ofFbo> renderFbos; // One per window
     vector<ofTexture> webcamTextures; // One per window
+    vector<ofTexture> videoTextures; // One per window
 };
