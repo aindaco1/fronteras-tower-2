@@ -48,38 +48,19 @@ void DisplayApp::keyPressed(int key) {
         isFullscreen = !isFullscreen;
         
         if (isFullscreen) {
-            // Get the monitor the window is currently on
-            GLFWmonitor* monitor = glfwGetPrimaryMonitor();
-            
-            // Try to find the monitor containing the window center
-            int windowX, windowY;
-            glfwGetWindowPos(glfwWindow, &windowX, &windowY);
-            int centerX = windowX + 360; // Assuming 720 width
-            int centerY = windowY + 240; // Assuming 480 height
-            
-            // Find monitor containing this position
-            int monitorCount;
-            GLFWmonitor** monitors = glfwGetMonitors(&monitorCount);
-            for (int i = 0; i < monitorCount; i++) {
-                int monitorX, monitorY;
-                glfwGetMonitorPos(monitors[i], &monitorX, &monitorY);
-                const GLFWvidmode* mode = glfwGetVideoMode(monitors[i]);
-                
-                if (centerX >= monitorX && centerX < monitorX + mode->width &&
-                    centerY >= monitorY && centerY < monitorY + mode->height) {
-                    monitor = monitors[i];
-                    break;
-                }
-            }
-            
-            // Set to fullscreen on detected monitor
-            const GLFWvidmode* mode = glfwGetVideoMode(monitor);
-            glfwSetWindowMonitor(glfwWindow, monitor, 0, 0, mode->width, mode->height, mode->refreshRate);
+            // Remove window decoration (title bar, borders)
+            glfwSetWindowAttrib(glfwWindow, GLFW_DECORATED, GLFW_FALSE);
+            // Maximize the window to fill the monitor
+            glfwMaximizeWindow(glfwWindow);
         } else {
-            // Exit fullscreen - return to windowed mode
-            glfwSetWindowMonitor(glfwWindow, nullptr, 50, 50, 720, 480, GLFW_DONT_CARE);
+            // Restore window decoration
+            glfwSetWindowAttrib(glfwWindow, GLFW_DECORATED, GLFW_TRUE);
+            // Restore to smaller window size
+            glfwRestoreWindow(glfwWindow);
+            glfwSetWindowPos(glfwWindow, 50, 50);
+            glfwSetWindowSize(glfwWindow, 720, 480);
         }
         
-        ofLogNotice() << "Window " << windowIndex << " fullscreen: " << isFullscreen;
+        ofLogNotice() << "Window " << windowIndex << " borderless fullscreen: " << isFullscreen;
     }
 }
