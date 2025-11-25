@@ -5,8 +5,16 @@ void DisplayApp::init(DisplayManager* mgr, int windowIdx) {
     windowIndex = windowIdx;
 }
 
+void DisplayApp::setGlfwWindow(GLFWwindow* win) {
+    glfwWindow = win;
+}
+
 void DisplayApp::setup() {
-    // GL context not ready yet, defer to update
+    // Set GLFW window pointer when GL context is ready
+    if (!glfwWindow) {
+        glfwWindow = glfwGetCurrentContext();
+        ofLogNotice() << "Window " << windowIndex << " set GLFW context";
+    }
 }
 
 void DisplayApp::update() {
@@ -35,8 +43,43 @@ void DisplayApp::draw() {
 void DisplayApp::keyPressed(int key) {
     // 'f' key toggles fullscreen/borderless on this window
     if (key == 'f' || key == 'F') {
+        if (!glfwWindow) return;
+        
         isFullscreen = !isFullscreen;
-        ofSetFullscreen(isFullscreen);
+        
+        if (isFullscreen) {
+            // Get the monitor the window is currently on
+            GLFWmonitor* monitor = glfwGetPrimaryMonitor();
+            
+            // Try to find the monitor containing the window center
+            int windowX, windowY;
+            glfwGetWindowPos(glfwWindow, &windowX, &windowY);
+            int centerX = windowX + 360; // Assuming 720 width
+            int centerY = windowY + 240; // Assuming 480 height
+            
+            // Find monitor containing this position
+            int monitorCount;
+            GLFWmonitor** monitors = glfwGetMonitors(&monitorCount);
+            for (int i = 0; i < monitorCount; i++) {
+                int monitorX, monitorY;
+                glfwGetMonitorPos(monitors[i], &monitorX, &monitorY);
+                const GLFWvidmode* mode = glfwGetVideoMode(monitors[i]);
+                
+                if (centerX >= monitorX && centerX < monitorX + mode->width &&
+                    centerY >= monitorY && centerY < monitorY + mode->height) {
+                    monitor = monitors[i];
+                    break;
+                }
+            }
+            
+            // Set to fullscreen on detected monitor
+            const GLFWvidmode* mode = glfwGetVideoMode(monitor);
+            glfwSetWindowMonitor(glfwWindow, monitor, 0, 0, mode->width, mode->height, mode->refreshRate);
+        } else {
+            // Exit fullscreen - return to windowed mode
+            glfwSetWindowMonitor(glfwWindow, nullptr, 50, 50, 720, 480, GLFW_DONT_CARE);
+        }
+        
         ofLogNotice() << "Window " << windowIndex << " fullscreen: " << isFullscreen;
     }
 }
