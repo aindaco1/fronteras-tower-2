@@ -31,3 +31,12 @@ void DisplayApp::draw() {
         ofDrawBitmapString("Window " + ofToString(windowIndex) + " waiting for setup...", 20, 20);
     }
 }
+
+void DisplayApp::keyPressed(int key) {
+    // 'f' key toggles fullscreen/borderless on this window
+    if (key == 'f' || key == 'F') {
+        isFullscreen = !isFullscreen;
+        ofSetFullscreen(isFullscreen);
+        ofLogNotice() << "Window " << windowIndex << " fullscreen: " << isFullscreen;
+    }
+}
