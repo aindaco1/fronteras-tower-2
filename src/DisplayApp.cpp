@@ -48,15 +48,40 @@ void DisplayApp::keyPressed(int key) {
         isFullscreen = !isFullscreen;
         
         if (isFullscreen) {
-            // Remove window decoration (title bar, borders)
+            // Find which monitor this window is on
+            int windowX, windowY;
+            glfwGetWindowPos(glfwWindow, &windowX, &windowY);
+            int centerX = windowX + 360;
+            int centerY = windowY + 240;
+            
+            GLFWmonitor* targetMonitor = glfwGetPrimaryMonitor();
+            int monitorCount;
+            GLFWmonitor** monitors = glfwGetMonitors(&monitorCount);
+            
+            for (int i = 0; i < monitorCount; i++) {
+                int monX, monY;
+                glfwGetMonitorPos(monitors[i], &monX, &monY);
+                const GLFWvidmode* mode = glfwGetVideoMode(monitors[i]);
+                
+                if (centerX >= monX && centerX < monX + mode->width &&
+                    centerY >= monY && centerY < monY + mode->height) {
+                    targetMonitor = monitors[i];
+                    break;
+                }
+            }
+            
+            // Get target monitor dimensions
+            int monX, monY;
+            glfwGetMonitorPos(targetMonitor, &monX, &monY);
+            const GLFWvidmode* mode = glfwGetVideoMode(targetMonitor);
+            
+            // Remove window decoration and position to fill only this monitor
             glfwSetWindowAttrib(glfwWindow, GLFW_DECORATED, GLFW_FALSE);
-            // Maximize the window to fill the monitor
-            glfwMaximizeWindow(glfwWindow);
+            glfwSetWindowPos(glfwWindow, monX, monY);
+            glfwSetWindowSize(glfwWindow, mode->width, mode->height);
         } else {
             // Restore window decoration
             glfwSetWindowAttrib(glfwWindow, GLFW_DECORATED, GLFW_TRUE);
-            // Restore to smaller window size
-            glfwRestoreWindow(glfwWindow);
             glfwSetWindowPos(glfwWindow, 50, 50);
             glfwSetWindowSize(glfwWindow, 720, 480);
         }
