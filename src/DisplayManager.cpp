@@ -360,20 +360,35 @@ void DisplayManager::draw(int windowIndex) {
 		renderFbos[windowIndex].draw(0, 0, ofGetWidth(), ofGetHeight());
 		glitchShaders[windowIndex].end();
 	} else if (assignment == 1) {
-		// Draw video FBO letterboxed using pre-calculated dimensions
-		if (videos.size() > 0 && currentVideoIndex >= 0 && currentVideoIndex < videos.size() &&
-		    currentVideoIndex < videoLetterboxDims.size()) {
-			float drawW = videoLetterboxDims[currentVideoIndex].x;
-			float drawY = videoLetterboxDims[currentVideoIndex].y;
-
-			if (drawW > 0) {
-				ofPushMatrix();
-				ofTranslate(0, drawY);
-				renderFbos[windowIndex].draw(0, 0, drawW, 480 - 2 * drawY);
-				ofPopMatrix();
+		// Draw video letterboxed to fit window
+		if (videos.size() > 0 && currentVideoIndex >= 0 && currentVideoIndex < videos.size()) {
+			float videoW = videos[currentVideoIndex].getWidth();
+			float videoH = videos[currentVideoIndex].getHeight();
+			float windowW = ofGetWidth();
+			float windowH = ofGetHeight();
+			
+			if (videoW > 0 && videoH > 0) {
+				float videoAspect = videoW / videoH;
+				float windowAspect = windowW / windowH;
+				float drawW, drawH, drawX, drawY;
+				
+				if (videoAspect > windowAspect) {
+					// Video is wider - fit to width
+					drawW = windowW;
+					drawH = windowW / videoAspect;
+					drawX = 0;
+					drawY = (windowH - drawH) * 0.5f;
+				} else {
+					// Video is taller - fit to height
+					drawH = windowH;
+					drawW = windowH * videoAspect;
+					drawX = (windowW - drawW) * 0.5f;
+					drawY = 0;
+				}
+				
+				renderFbos[windowIndex].draw(drawX, drawY, drawW, drawH);
 			} else {
-				// Fallback if dimensions not available yet
-				renderFbos[windowIndex].draw(0, 0, ofGetWidth(), ofGetHeight());
+				renderFbos[windowIndex].draw(0, 0, windowW, windowH);
 			}
 		} else {
 			renderFbos[windowIndex].draw(0, 0, ofGetWidth(), ofGetHeight());
