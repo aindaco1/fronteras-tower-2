@@ -5,7 +5,7 @@ void DisplayManager::setup() {
 
 	setupComplete = false;
 	proximity = 0.0f;
-	frameSkip = 0; // Process every frame
+	frameSkip = 1; // Process every other frame for face detection
 	frameCounter = 0;
 	consecutiveDetections = 0;
 	detectionThreshold = 3; // Must detect face in 3+ consecutive processed frames
@@ -17,7 +17,9 @@ void DisplayManager::setup() {
 	mirrorSource = 0;
 	lastStaticImageWindow = 2;
 
-	webcam.setup(320, 240); // Reduced resolution for better performance
+	// Reduced resolution for better performance
+	webcam.setDesiredFrameRate(30);  // Limit webcam framerate
+	webcam.setup(320, 240);
 	ofLogNotice() << "Webcam setup complete";
 
 	// Try alternative cascade that sometimes works better
@@ -206,40 +208,50 @@ void DisplayManager::update() {
 	// Check for time-based swapping
 	if (ofGetElapsedTimef() - lastSwapTime > swapInterval) {
 		// Randomly shuffle assignments among all 3 windows and 3 sources
-		// Ensure all positions change (derangement)
-		vector<int> sources = {0, 1, 2}; // 0=webcam, 1=video, 2=static image
+		// Each source (0=webcam, 1=video, 2=static) goes to exactly one window
+		vector<int> sources = {0, 1, 2};
 		vector<int> oldAssignment(windowAssignment, windowAssignment + NUM_OUTPUTS);
 		
 		bool validShuffle = false;
-		while (!validShuffle) {
+		int maxAttempts = 100;
+		int attempts = 0;
+		
+		while (!validShuffle && attempts < maxAttempts) {
+			attempts++;
 			// Fisher-Yates shuffle
-			for (int i = sources.size() - 1; i > 0; i--) {
-				int j = ofRandom(0, i + 1);
+			for (int i = (int)sources.size() - 1; i > 0; i--) {
+				int j = (int)ofRandom(0, i + 1);
 				std::swap(sources[i], sources[j]);
 			}
 			
-			// Check if at least 2 positions changed (to avoid same configuration)
+			// Verify no duplicates (should always be true with proper shuffle)
+			bool hasDuplicates = (sources[0] == sources[1] || sources[1] == sources[2] || sources[0] == sources[2]);
+			
+			// Check if at least 2 positions changed
 			int changes = 0;
 			for (int i = 0; i < NUM_OUTPUTS; i++) {
 				if (sources[i] != oldAssignment[i]) {
 					changes++;
 				}
 			}
-			if (changes >= 2) {
+			
+			if (!hasDuplicates && changes >= 2) {
 				validShuffle = true;
 			}
 		}
 		
-		// Assign shuffled sources to windows
-		for (int i = 0; i < NUM_OUTPUTS; i++) {
-			windowAssignment[i] = sources[i];
+		// Only apply if we got a valid shuffle
+		if (validShuffle) {
+			for (int i = 0; i < NUM_OUTPUTS; i++) {
+				windowAssignment[i] = sources[i];
+			}
+			ofLogNotice() << "Swapped assignments: window 0=" << windowAssignment[0] 
+				<< ", window 1=" << windowAssignment[1] 
+				<< ", window 2=" << windowAssignment[2];
 		}
 		
 		lastSwapTime = ofGetElapsedTimef();
 		swapInterval = ofRandom(1.0f, 30.0f);
-		ofLogNotice() << "Swapped assignments: window 0=" << windowAssignment[0] 
-			<< ", window 1=" << windowAssignment[1] 
-			<< ", window 2=" << windowAssignment[2];
 	}
 }
 
