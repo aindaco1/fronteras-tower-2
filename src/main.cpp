@@ -1,6 +1,7 @@
 #include "ofMain.h"
 #include "DisplayApp.h"
 #include "DisplayManager.h"
+#include "GLFW/glfw3.h"
 
 // Force dedicated GPU on Windows (NVIDIA Optimus / AMD PowerXpress)
 #ifdef _WIN32
@@ -13,11 +14,21 @@ extern "C" {
 shared_ptr<DisplayManager> globalManager;
 
 int main() {
+    // Initialize GLFW before querying monitors
+    if (!glfwInit()) {
+        ofLogError() << "Failed to initialize GLFW";
+        return -1;
+    }
+    
     globalManager = make_shared<DisplayManager>();
     
     // Check how many monitors are connected
-    int monitorCount;
+    int monitorCount = 0;
     GLFWmonitor** monitors = glfwGetMonitors(&monitorCount);
+    
+    if (monitors == nullptr) {
+        monitorCount = 0;
+    }
     
     bool useFullscreen = (monitorCount >= 3);
     
