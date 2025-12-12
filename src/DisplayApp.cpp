@@ -15,6 +15,16 @@ void DisplayApp::setup() {
         glfwWindow = glfwGetCurrentContext();
         ofLogNotice() << "Window " << windowIndex << " set GLFW context";
     }
+    
+    // Performance: disable vsync for smoother multi-window rendering
+    // Only enable on window 0 to prevent screen tearing
+    if (windowIndex == 0) {
+        ofSetVerticalSync(true);
+    } else {
+        ofSetVerticalSync(false);
+    }
+    
+    ofSetFrameRate(60);
 }
 
 void DisplayApp::update() {

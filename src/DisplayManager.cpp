@@ -59,6 +59,8 @@ void DisplayManager::setup() {
 
 	for (auto & file : dir) {
 		ofVideoPlayer player;
+		player.setPixelFormat(OF_PIXELS_NATIVE);  // Use native pixel format for better performance
+		player.setUseTexture(true);
 		if (player.load(file.getAbsolutePath())) {
 			player.setLoopState(OF_LOOP_NONE); // Play once, no loop
 			videos.push_back(player);
@@ -106,9 +108,9 @@ void DisplayManager::setup() {
 void DisplayManager::update() {
 	webcam.update();
 
-	// Update all videos
-	for (auto & video : videos) {
-		video.update();
+	// Only update the current video (not all videos)
+	if (videos.size() > 0 && currentVideoIndex >= 0 && currentVideoIndex < videos.size()) {
+		videos[currentVideoIndex].update();
 	}
 
 	// Check for video end and switch to next

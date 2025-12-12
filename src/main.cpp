@@ -17,11 +17,16 @@ shared_ptr<DisplayManager> globalManager;
 const bool FORCE_WINDOWED = false;
 
 int main() {
+    // Performance settings
+    ofSetLogLevel(OF_LOG_NOTICE);  // Reduce log overhead
+    
     globalManager = make_shared<DisplayManager>();
     
     ofGLFWWindowSettings settings;
     settings.setSize(720, 480);
     settings.resizable = true;
+    settings.numSamples = 0;  // Disable antialiasing for performance
+    settings.doubleBuffering = true;
     
     // Create first window (this initializes GLFW)
     settings.setPosition(ofVec2f(50, 50));
