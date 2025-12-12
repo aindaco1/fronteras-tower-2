@@ -16,6 +16,10 @@ public:
 private:
     static const int NUM_OUTPUTS = 3;
     
+    // Render resolution (lower = better performance, scales up to fullscreen)
+    static const int RENDER_WIDTH = 640;
+    static const int RENDER_HEIGHT = 480;
+    
     ofVideoGrabber webcam;
     ofxCvHaarFinder faceFinder;
     ofxCvColorImage colorImg;

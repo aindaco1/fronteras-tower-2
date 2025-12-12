@@ -5,7 +5,7 @@ void DisplayManager::setup() {
 
 	setupComplete = false;
 	proximity = 0.0f;
-	frameSkip = 1; // Process every other frame for face detection
+	frameSkip = 2; // Process every 3rd frame for face detection
 	frameCounter = 0;
 	consecutiveDetections = 0;
 	detectionThreshold = 3; // Must detect face in 3+ consecutive processed frames
@@ -18,8 +18,8 @@ void DisplayManager::setup() {
 	lastStaticImageWindow = 2;
 
 	// Reduced resolution for better performance
-	webcam.setDesiredFrameRate(30);  // Limit webcam framerate
-	webcam.setup(320, 240);
+	webcam.setDesiredFrameRate(24);  // Limit webcam framerate
+	webcam.setup(320, 240);  // Low resolution, scales up via FBO
 	ofLogNotice() << "Webcam setup complete";
 
 	// Try alternative cascade that sometimes works better
@@ -267,10 +267,10 @@ void DisplayManager::draw(int windowIndex) {
 		}
 	}
 
-	// Allocate FBO for this window if needed
-	if (!renderFbos[windowIndex].isAllocated() || renderFbos[windowIndex].getWidth() != ofGetWidth() || renderFbos[windowIndex].getHeight() != ofGetHeight()) {
-		renderFbos[windowIndex].allocate(ofGetWidth(), ofGetHeight(), GL_RGBA);
-		ofLogNotice() << "Allocated FBO for window " << windowIndex << ": " << ofGetWidth() << "x" << ofGetHeight();
+	// Allocate FBO at fixed render resolution (scales up to fullscreen for performance)
+	if (!renderFbos[windowIndex].isAllocated()) {
+		renderFbos[windowIndex].allocate(RENDER_WIDTH, RENDER_HEIGHT, GL_RGBA);
+		ofLogNotice() << "Allocated FBO for window " << windowIndex << ": " << RENDER_WIDTH << "x" << RENDER_HEIGHT << " (renders to " << ofGetWidth() << "x" << ofGetHeight() << ")";
 	}
 
 	// Update webcam texture for this GL context only when new frame
