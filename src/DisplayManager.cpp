@@ -192,13 +192,13 @@ void DisplayManager::update() {
 			} else {
 				// Check if we should start mirror mode
 				if (elapsedSinceImageShow > 5.0f) {
-					// Start mirroring either webcam (0) or video (1)
-					mirrorSource = ofRandom(0, 2);
+					// Only mirror webcam (0) - video (1) must stay exclusive to one window
+					mirrorSource = 0;
 					windowAssignment[currentStaticImageWindow] = mirrorSource;
 					inMirrorMode = true;
 					mirrorModeStartTime = ofGetElapsedTimef();
 					mirrorModeDuration = ofRandom(5.0f, 10.0f);
-					ofLogNotice() << "Window " << currentStaticImageWindow << " mirroring source " << mirrorSource 
+					ofLogNotice() << "Window " << currentStaticImageWindow << " mirroring webcam"
 						<< " for " << mirrorModeDuration << " seconds";
 				}
 			}
