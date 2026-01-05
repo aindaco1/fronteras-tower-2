@@ -1,5 +1,9 @@
 #include "DisplayManager.h"
 
+// Render resolution (lower = better performance, scales up to fullscreen)
+#define RENDER_WIDTH 640
+#define RENDER_HEIGHT 480
+
 void DisplayManager::setup() {
 	ofLogNotice() << "DisplayManager::setup() - Starting";
 
@@ -49,6 +53,8 @@ void DisplayManager::setup() {
 	webcamTextures.resize(NUM_OUTPUTS);
 	videoTextures.resize(NUM_OUTPUTS);
 	staticImageTextures.resize(NUM_OUTPUTS);
+	lastCopiedVideoFrame.resize(NUM_OUTPUTS, -1);
+	videoFrameNumber = 0;
 
 	// Load videos from data/movies/
 	ofDirectory dir("movies/");
@@ -59,24 +65,23 @@ void DisplayManager::setup() {
 
 	for (auto & file : dir) {
 		ofVideoPlayer player;
-		player.setPixelFormat(OF_PIXELS_NATIVE);  // Use native pixel format for better performance
-		player.setUseTexture(true);
+		player.setUseTexture(false);  // Disable GL texture - avoids AVFoundation context issues
+		ofLogNotice() << "Loading video: " << file.getFileName();
 		if (player.load(file.getAbsolutePath())) {
-			player.setLoopState(OF_LOOP_NONE); // Play once, no loop
-			videos.push_back(player);
+			player.setLoopState(OF_LOOP_NORMAL);
+			player.play();
+			videos.push_back(std::move(player));
 			int videoIndex = videos.size() - 1;
-			calculateLetterboxDims(videoIndex);
 			ofLogNotice() << "Loaded video: " << file.getFileName() 
-				<< " (" << player.getWidth() << "x" << player.getHeight() << ")";
+				<< " (" << videos[videoIndex].getWidth() << "x" << videos[videoIndex].getHeight() << ")";
+		} else {
+			ofLogError() << "Failed to load video: " << file.getFileName();
 		}
 	}
+	hasValidVideoPixels = false;
 
 	ofLogNotice() << "Loaded " << videos.size() << " videos";
-
 	currentVideoIndex = 0;
-	if (videos.size() > 0) {
-		videos[0].play();
-	}
 
 	// Load static image for window 2
 	if (ofFile::doesFileExist("images/test.jpg")) {
@@ -110,7 +115,15 @@ void DisplayManager::update() {
 
 	// Only update the current video (not all videos)
 	if (videos.size() > 0 && currentVideoIndex >= 0 && currentVideoIndex < videos.size()) {
-		videos[currentVideoIndex].update();
+		ofVideoPlayer& video = videos[currentVideoIndex];
+		video.update();
+		
+		// Cache pixels during update (in window 0's context) so all windows can use them
+		if (video.isFrameNew() && video.getPixels().isAllocated()) {
+			cachedVideoPixels = video.getPixels();
+			hasValidVideoPixels = true;
+			videoFrameNumber++;
+		}
 	}
 
 	// Check for video end and switch to next
@@ -152,10 +165,10 @@ void DisplayManager::update() {
 		// Debug output every 60 frames
 		if (ofGetFrameNum() % 60 == 0) {
 			ofLogNotice() << "Raw detections: " << faceFinder.blobs.size();
-			for (int i = 0; i < faceFinder.blobs.size(); i++) {
-				ofLogNotice() << "  Blob " << i << " size: " << faceFinder.blobs[i].boundingRect.width
-							  << "x" << faceFinder.blobs[i].boundingRect.height;
-			}
+			for (size_t i = 0; i < faceFinder.blobs.size(); i++) {
+						ofLogNotice() << "  Blob " << i << " size: " << faceFinder.blobs[i].boundingRect.width
+									  << "x" << faceFinder.blobs[i].boundingRect.height;
+					}
 		}
 
 		updateProximity();
@@ -290,14 +303,29 @@ void DisplayManager::draw(int windowIndex) {
 		// Draw webcam fullscreen (no letterboxing)
 		webcamTextures[windowIndex].draw(0, 0, renderFbos[windowIndex].getWidth(), renderFbos[windowIndex].getHeight());
 	} else if (assignment == 1) {
-		// Draw video fullscreen to FBO (letterboxing will be applied at screen render time)
+		// Draw video fullscreen to FBO using cached pixels (avoids GL context issues)
 		if (videos.size() > 0 && currentVideoIndex < videos.size()) {
-			// Update texture if video frame is new
-			if (videos[currentVideoIndex].isFrameNew() && videos[currentVideoIndex].getPixels().size() > 0) {
-				videoTextures[windowIndex].loadData(videos[currentVideoIndex].getPixels());
+			ofVideoPlayer& video = videos[currentVideoIndex];
+			
+			// Make sure video is playing
+			if (!video.isPlaying()) {
+				video.play();
 			}
-			// Draw fullscreen to FBO
-			videoTextures[windowIndex].draw(0, 0, renderFbos[windowIndex].getWidth(), renderFbos[windowIndex].getHeight());
+			
+			// Copy cached pixels to window-specific texture
+			if (hasValidVideoPixels && cachedVideoPixels.isAllocated()) {
+				bool needsCopy = !videoTextures[windowIndex].isAllocated() ||
+				                 lastCopiedVideoFrame[windowIndex] != videoFrameNumber;
+				if (needsCopy) {
+					videoTextures[windowIndex].loadData(cachedVideoPixels);
+					lastCopiedVideoFrame[windowIndex] = videoFrameNumber;
+				}
+			}
+			
+			// Draw the window-specific texture
+			if (videoTextures[windowIndex].isAllocated()) {
+				videoTextures[windowIndex].draw(0, 0, renderFbos[windowIndex].getWidth(), renderFbos[windowIndex].getHeight());
+			}
 		}
 	} else if (assignment == 2) {
 		// Draw static image fullscreen to FBO
@@ -324,7 +352,7 @@ void DisplayManager::draw(int windowIndex) {
 		int minDim = std::min(webcam.getWidth(), webcam.getHeight());
 		float minAllowedSize = minDim * 0.20f;
 
-		for (int i = 0; i < faceFinder.blobs.size(); i++) {
+		for (size_t i = 0; i < faceFinder.blobs.size(); i++) {
 			auto & rect = faceFinder.blobs[i].boundingRect;
 
 			// Filter: size check
@@ -348,19 +376,6 @@ void DisplayManager::draw(int windowIndex) {
 	}
 
 	renderFbos[windowIndex].end();
-
-	// Draw debug info only on webcam window
-	if (assignment == 0) {
-		ofSetColor(255);
-		ofDrawBitmapString("Proximity: " + ofToString(proximity, 2), 20, 20);
-		ofDrawBitmapString("Faces detected: " + ofToString(faceFinder.blobs.size()), 20, 40);
-
-		// Show face size for debugging
-		if (faceFinder.blobs.size() > 0) {
-			float faceSize = faceFinder.blobs[0].boundingRect.width;
-			ofDrawBitmapString("Face size: " + ofToString(faceSize, 0) + "px", 20, 60);
-		}
-	}
 
 	// Apply glitch shader only to webcam
 	ofSetColor(255);
@@ -428,7 +443,7 @@ void DisplayManager::updateProximity() {
 			float minAllowedSize = minDim * 0.20f;
 			float largestFaceSize = 0;
 
-			for (int i = 0; i < faceFinder.blobs.size(); i++) {
+			for (size_t i = 0; i < faceFinder.blobs.size(); i++) {
 				auto & rect = faceFinder.blobs[i].boundingRect;
 
 				// Apply same filters as drawing
@@ -456,13 +471,20 @@ void DisplayManager::updateProximity() {
 }
 
 void DisplayManager::calculateLetterboxDims(int videoIndex) {
-	if (videoIndex < 0 || videoIndex >= videos.size()) {
+	if (videoIndex < 0 || videoIndex >= (int)videos.size()) {
 		return;
 	}
 
 	// Ensure vector is large enough
-	if (videoIndex >= videoLetterboxDims.size()) {
+	if (videoIndex >= (int)videoLetterboxDims.size()) {
 		videoLetterboxDims.resize(videoIndex + 1, ofVec2f(0, 0));
+	}
+
+	// Safety check - make sure video is loaded
+	if (!videos[videoIndex].isLoaded()) {
+		ofLogWarning() << "Video " << videoIndex << " not loaded yet";
+		videoLetterboxDims[videoIndex] = ofVec2f(0, 0);
+		return;
 	}
 
 	float videoW = videos[videoIndex].getWidth();
@@ -505,7 +527,7 @@ void DisplayManager::calculateLetterboxDims(int videoIndex) {
 }
 
 void DisplayManager::reloadVideo(int videoIndex) {
-	if (videoIndex < 0 || videoIndex >= videos.size()) {
+	if (videoIndex < 0 || videoIndex >= (int)videos.size()) {
 		return;
 	}
 
@@ -513,12 +535,14 @@ void DisplayManager::reloadVideo(int videoIndex) {
 
 	// Close and clear the video
 	video.close();
+	hasValidVideoPixels = false;  // Invalidate cached pixels
 
 	// Clear textures for all windows so they get reloaded
-	for (int i = 0; i < videoTextures.size(); i++) {
+	for (size_t i = 0; i < videoTextures.size(); i++) {
 		if (videoTextures[i].isAllocated()) {
 			videoTextures[i].clear();
 		}
+		lastCopiedVideoFrame[i] = -1;  // Reset frame tracking
 	}
 
 	// Reload from disk
@@ -528,18 +552,15 @@ void DisplayManager::reloadVideo(int videoIndex) {
 	dir.allowExt("avi");
 	dir.listDir();
 
-	if (videoIndex < dir.size()) {
+	if (videoIndex < (int)dir.size()) {
+		video.setUseTexture(false);  // Keep texture disabled
+		video.setPixelFormat(OF_PIXELS_NATIVE);
 		video.load(dir.getPath(videoIndex));
-		// Ensure dimensions are available after load
-		int maxRetries = 10;
-		int retries = 0;
-		while ((video.getWidth() <= 0 || video.getHeight() <= 0) && retries < maxRetries) {
-			ofSleepMillis(10);
-			retries++;
-		}
-
+		
 		// Recalculate letterbox dimensions for reloaded video
-		calculateLetterboxDims(videoIndex);
+		if (video.isLoaded() && video.getWidth() > 0 && video.getHeight() > 0) {
+			calculateLetterboxDims(videoIndex);
+		}
 
 		video.play();
 		ofLogNotice() << "Reloaded video " << videoIndex 

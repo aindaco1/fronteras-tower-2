@@ -10,15 +10,11 @@ public:
     void draw(int windowIndex);
     
     float getProximity() const { return proximity; }
-    ofFbo& getFbo(int index) { return fbos[index]; }
+    ofFbo& getFbo(int index) { return renderFbos[index]; }
     bool isSetup() const { return setupComplete; }
     
 private:
     static const int NUM_OUTPUTS = 3;
-    
-    // Render resolution (lower = better performance, scales up to fullscreen)
-    static const int RENDER_WIDTH = 640;
-    static const int RENDER_HEIGHT = 480;
     
     ofVideoGrabber webcam;
     ofxCvHaarFinder faceFinder;
@@ -29,7 +25,6 @@ private:
     vector<ofVec2f> videoLetterboxDims;  // Pre-calculated letterbox dims {drawW, drawY}
     ofImage staticImage;
     vector<ofTexture> staticImageTextures;  // One per window
-    vector<ofFbo> fbos;
     
     float proximity;
     int windowAssignment[NUM_OUTPUTS];
@@ -64,4 +59,12 @@ private:
     vector<ofFbo> renderFbos; // One per window
     vector<ofTexture> webcamTextures; // One per window
     vector<ofTexture> videoTextures; // One per window
+    
+    // Track which frame each window last copied (for multi-context video sync)
+    int videoFrameNumber;
+    vector<int> lastCopiedVideoFrame; // One per window
+    
+    // Cached video pixels (avoid GL context issues with AVFoundation)
+    ofPixels cachedVideoPixels;
+    bool hasValidVideoPixels;
 };

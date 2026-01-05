@@ -79,6 +79,9 @@ OF_ROOT = ../../..
 # TODO: should this be a default setting?
 # PROJECT_LDFLAGS=-Wl,-rpath=./libs
 
+# Remove deprecated AGL framework (no longer exists in modern macOS)
+PLATFORM_FRAMEWORKS := $(filter-out AGL,$(PLATFORM_FRAMEWORKS))
+
 ################################################################################
 # PROJECT DEFINES
 #   Create a space-delimited list of DEFINES. The list will be converted into 
