@@ -1,6 +1,3 @@
-// MSVC fix: patched ofEvent.h must be included before OF headers
-#include "of_patches/ofEvent.h"
-
 #include "ofMain.h"
 #include "DisplayApp.h"
 #include "DisplayManager.h"
